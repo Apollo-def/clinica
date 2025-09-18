@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sistema de Controle de Consultas Médicas - Página Única</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div class="mx-auto">
+        <h1 class="text-2xl font-bold text-center">Consulta Fácil - Serviços Médicos⚕️</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-300 text-center">Controle de pacientes e consultas</p>
+      </div>
+      <button id="toggle-theme" class="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+        Tema claro ☀️
+      </button>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Pacientes -->
+      <section class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="font-semibold">Pacientes</h2>
+          <div class="space-x-2">
+            <button id="btn-add-paciente" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Novo Paciente</button>
+            <button id="btn-refresh-pacientes" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Atualizar</button>
+          </div>
+        </div>
+        <div id="lista-pacientes" class="space-y-2 max-h-96 overflow-auto"></div>
+      </section>
+
+      <!-- Consultas -->
+      <section class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="font-semibold">Consultas</h2>
+          <div class="space-x-2">
+            <button id="btn-add-consulta" class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Nova Consulta</button>
+            <button id="btn-refresh-consultas" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Atualizar</button>
+          </div>
+        </div>
+        <div id="lista-consultas" class="space-y-2 max-h-96 overflow-auto"></div>
+      </section>
+    </main>
+
+    <footer class="mt-6 text-xs text-gray-500 dark:text-gray-400">Observação: esta página espera uma API REST em /api/pacientes e /api/consultas (GET/POST/PUT/DELETE).</footer>
+  </div>
+
+  <!-- Modal: Formulário Paciente -->
+  <div id="modal-paciente" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow w-full max-w-lg p-6">
+      <h3 id="modal-paciente-title" class="text-lg font-semibold mb-3">Novo Paciente</h3>
+      <form id="form-paciente" class="space-y-3">
+        <input type="hidden" name="id" />
+        <div>
+          <label class="block text-sm">Nome Completo:</label>
+          <input name="nome" type="text" required class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-sm">CPF:</label>
+            <input name="cpf" type="number" required class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+          </div>
+          <div>
+            <label class="block text-sm">Data de Nasc.</label>
+            <input name="data_nascimento" type="date" class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-sm">Telefone:</label>
+            <input name="telefone" type="tel" class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+          </div>
+          <div>
+            <label class="block text-sm">E-mail:</label>
+            <input name="email" type="email" class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="close-paciente" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Fechar</button>
+          <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Formulário Consulta -->
+  <div id="modal-consulta" class="fixed inset-0 bg-black/40 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow w-full max-w-lg p-6">
+      <h3 id="modal-consulta-title" class="text-lg font-semibold mb-3">Nova Consulta</h3>
+      <form id="form-consulta" class="space-y-3">
+        <input type="hidden" name="id" />
+        <div>
+          <label class="block text-sm">Paciente:</label>
+          <select name="paciente_id" required class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" id="select-pacientes"></select>
+        </div>
+        <div>
+          <label class="block text-sm">Médico:</label>
+          <input name="medico" type="text" required class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-sm">Data:</label>
+            <input name="data" type="date" required class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+          </div>
+          <div>
+            <label class="block text-sm">Horário:</label>
+            <input name="horario" type="time" required class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm">Status</label>
+          <select name="status" class="w-full border rounded p-2 dark:bg-gray-700 dark:text-gray-100">
+            <option value="agendada">Agendada</option>
+            <option value="realizada">Realizada</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="close-consulta" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Fechar</button>
+          <button type="submit" class="px-4 py-2 rounded bg-green-600 text-white">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // URL base da API (ajuste se necessário)
+    const API_BASE = '/api';
+
+    // Estado local
+    let pacientes = [];
+    let consultas = [];
+
+    // Helpers
+    async function request(path, options = {}){
+      const res = await fetch(API_BASE + path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...options
+      });
+      if (!res.ok) throw new Error('Erro na requisição: ' + res.status);
+      if (res.status === 204) return null;
+      return res.json();
+    }
+
+    // Fetch all
+    async function carregarPacientes(){
+      try{
+        pacientes = await request('/pacientes');
+        renderPacientes();
+        preencherSelectPacientes();
+      }catch(e){
+        alert('Falha ao carregar pacientes. ' + e.message);
+      }
+    }
+
+    async function carregarConsultas(){
+      try{
+        consultas = await request('/consultas');
+        renderConsultas();
+      }catch(e){
+        alert('Falha ao carregar consultas. ' + e.message);
+      }
+    }
+
+    // Render
+    function renderPacientes(){
+      const container = document.getElementById('lista-pacientes');
+      container.innerHTML = '';
+      if (!pacientes.length) {
+        container.innerHTML = '<p class="text-sm text-gray-500">Nenhum paciente cadastrado.</p>';
+        return;
+      }
+      pacientes.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'p-3 border rounded flex justify-between items-center hover:bg-gray-100';
+        div.innerHTML = `
+          <div>
+            <div class="font-medium">${escapeHtml(p.nome)}</div>
+            <div class="text-xs text-gray-500">CPF: ${escapeHtml(p.cpf || '')} • ${p.email || ''}</div>
+          </div>
+          <div class="flex gap-2">
+            <button data-id="${p.id}" class="btn-editar-paciente px-2 py-1 text-sm bg-yellow-300 rounded">Editar</button>
+            <button data-id="${p.id}" class="btn-deletar-paciente px-2 py-1 text-sm bg-red-400 text-white rounded">Remover</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+      // attach handlers
+      document.querySelectorAll('.btn-editar-paciente').forEach(btn => btn.onclick = onEditarPaciente);
+      document.querySelectorAll('.btn-deletar-paciente').forEach(btn => btn.onclick = onDeletarPaciente);
+    }
+
+    function renderConsultas(){
+      const container = document.getElementById('lista-consultas');
+      container.innerHTML = '';
+      if (!consultas.length) {
+        container.innerHTML = '<p class="text-sm text-gray-500">Nenhuma consulta cadastrada.</p>';
+        return;
+      }
+      consultas.forEach(c => {
+        const paciente = pacientes.find(p => p.id === c.paciente_id) || { nome: '—' };
+        const div = document.createElement('div');
+        div.className = 'p-3 border rounded flex justify-between items-center hover:bg-gray-100';
+        div.innerHTML = `
+          <div>
+            <div class="font-medium">${escapeHtml(paciente.nome)} — ${escapeHtml(c.medico)}</div>
+            <div class="text-xs text-gray-500">${escapeHtml(c.data)} ${escapeHtml(c.horario)} • ${escapeHtml(c.status)}</div>
+          </div>
+          <div class="flex gap-2">
+            <button data-id="${c.id}" class="btn-editar-consulta px-2 py-1 text-sm bg-yellow-300 rounded">Editar</button>
+            <button data-id="${c.id}" class="btn-deletar-consulta px-2 py-1 text-sm bg-red-400 text-white rounded">Remover</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+      document.querySelectorAll('.btn-editar-consulta').forEach(btn => btn.onclick = onEditarConsulta);
+      document.querySelectorAll('.btn-deletar-consulta').forEach(btn => btn.onclick = onDeletarConsulta);
+    }
+
+    // Sanitiza texto simples
+    function escapeHtml(text){
+      if (!text) return '';
+      return String(text).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    // Preencher select de pacientes
+    function preencherSelectPacientes(){
+      const sel = document.getElementById('select-pacientes');
+      if (!sel) return;
+      sel.innerHTML = '';
+      pacientes.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.nome} (${p.cpf || ''})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    // Eventos CRUD Pacientes
+    function abrirModalPaciente(edit = null){
+      const modal = document.getElementById('modal-paciente');
+      const form = document.getElementById('form-paciente');
+      form.reset();
+      form.id.value = '';
+      document.getElementById('modal-paciente-title').textContent = edit ? 'Editar Paciente' : 'Adicionar Paciente';
+      if (edit){
+        form.id.value = edit.id;
+        form.nome.value = edit.nome || '';
+        form.cpf.value = edit.cpf || '';
+        form.data_nascimento.value = edit.data_nascimento || '';
+        form.telefone.value = edit.telefone || '';
+        form.email.value = edit.email || '';
+      }
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    async function onEditarPaciente(e){
+      const id = Number(e.currentTarget.dataset.id);
+      const p = pacientes.find(x => x.id === id);
+      abrirModalPaciente(p);
+    }
+
+    async function onDeletarPaciente(e){
+      if (!confirm('Remover paciente?')) return;
+      const id = Number(e.currentTarget.dataset.id);
+      try{
+        await request(`/pacientes/${id}`, { method: 'DELETE' });
+        await carregarPacientes();
+        await carregarConsultas();
+      }catch(err){ alert('Erro: ' + err.message); }
+    }
+
+    // Form paciente submit
+    document.getElementById('form-paciente').addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      const f = ev.target;
+      const payload = {
+        nome: f.nome.value.trim(),
+        cpf: f.cpf.value.trim(),
+        data_nascimento: f.data_nascimento.value || null,
+        telefone: f.telefone.value.trim(),
+        email: f.email.value.trim() || null
+      };
+      try{
+        if (f.id.value){
+          await request(`/pacientes/${f.id.value}`, { method: 'PUT', body: JSON.stringify(payload) });
+        } else {
+          await request('/pacientes', { method: 'POST', body: JSON.stringify(payload) });
+        }
+        closeModalPaciente();
+        await carregarPacientes();
+        await carregarConsultas();
+      }catch(err){ alert('Erro ao salvar paciente: ' + err.message); }
+    });
+
+    document.getElementById('btn-add-paciente').onclick = () => abrirModalPaciente(null);
+    document.getElementById('close-paciente').onclick = closeModalPaciente;
+    document.getElementById('btn-refresh-pacientes').onclick = carregarPacientes;
+
+    function closeModalPaciente(){
+      const modal = document.getElementById('modal-paciente');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Eventos CRUD Consultas
+    function abrirModalConsulta(edit = null){
+      const modal = document.getElementById('modal-consulta');
+      const form = document.getElementById('form-consulta');
+      form.reset();
+      form.id.value = '';
+      document.getElementById('modal-consulta-title').textContent = edit ? 'Editar Consulta' : 'Adicionar Consulta';
+      if (edit){
+        form.id.value = edit.id;
+        form.paciente_id.value = edit.paciente_id;
+        form.medico.value = edit.medico || '';
+        form.data.value = edit.data || '';
+        form.horario.value = edit.horario || '';
+        form.status.value = edit.status || 'agendado';
+      }
+      preencherSelectPacientes();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    async function onEditarConsulta(e){
+      const id = Number(e.currentTarget.dataset.id);
+      const c = consultas.find(x => x.id === id);
+      abrirModalConsulta(c);
+    }
+
+    async function onDeletarConsulta(e){
+      if (!confirm('Remover consulta?')) return;
+      const id = Number(e.currentTarget.dataset.id);
+      try{
+        await request(`/consultas/${id}`, { method: 'DELETE' });
+        await carregarConsultas();
+      }catch(err){ alert('Erro: ' + err.message); }
+    }
+
+    document.getElementById('form-consulta').addEventListener('submit', async function(ev){
+      ev.preventDefault();
+      const f = ev.target;
+      const payload = {
+        paciente_id: Number(f.paciente_id.value),
+        medico: f.medico.value.trim(),
+        data: f.data.value,
+        horario: f.horario.value,
+        status: f.status.value
+      };
+      try{
+        if (f.id.value){
+          await request(`/consultas/${f.id.value}`, { method: 'PUT', body: JSON.stringify(payload) });
+        } else {
+          await request('/consultas', { method: 'POST', body: JSON.stringify(payload) });
+        }
+        closeModalConsulta();
+        await carregarConsultas();
+      }catch(err){ alert('Erro ao salvar consulta: ' + err.message); }
+    });
+
+    document.getElementById('btn-add-consulta').onclick = () => abrirModalConsulta(null);
+    document.getElementById('close-consulta').onclick = closeModalConsulta;
+    document.getElementById('btn-refresh-consultas').onclick = carregarConsultas;
+
+    function closeModalConsulta(){
+      const modal = document.getElementById('modal-consulta');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    // Tema claro/escuro
+    const themeBtn = document.getElementById('toggle-theme');
+    function setTheme(dark) {
+      const html = document.documentElement;
+      if (dark) {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        themeBtn.textContent = 'Tema claro ☀️';
+      } else {
+        html.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        themeBtn.textContent = 'Tema escuro 🌙';
+      }
+    }
+    themeBtn.onclick = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setTheme(!isDark);
+    };
+    // Inicializa tema conforme preferência salva ou sistema
+    (function () {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        setTheme(true);
+      } else {
+        setTheme(false);
+      }
+    })();
+
+    // Inicialização
+    (async function init(){
+      await carregarPacientes();
+      await carregarConsultas();
+    })();
+  </script>
+</body>
+</html>
