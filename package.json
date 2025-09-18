@@ -1,5 +1,18 @@
 {
   "dependencies": {
-    "node.js": "^0.0.1-security"
-  }
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "node.js": "^0.0.1-security",
+    "pg": "^8.16.3"
+  },
+  "name": "clinica",
+  "description": "<p align=\"center\"><img width=\"500\" height=\"500\" alt=\"Serviços médicos minimalista branco logo\" src=\"https://github.com/user-attachments/assets/c2e55b4c-ea4f-4c28-9090-a96eb6b436fa\" />",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
