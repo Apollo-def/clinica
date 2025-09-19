@@ -24,9 +24,11 @@ Visualização no HTML:
 
 Lista única exibindo todas as consultas
 Botões para Adicionar, Editar e Remover
+---------------------------------------------------------------
 Relacionamento:
 
 Cada consulta está vinculada a um paciente
+-----------------------------------------------------------
 🛠️ Requisitos Técnicos
 Backend: Java com POO (boas práticas de código)
 Banco de Dados: PostgreSQL (relacionamento entre tabelas: pacientes e consultas)
