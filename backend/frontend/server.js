@@ -8,10 +8,10 @@ const port = 3000;
 
 // Conexão com PostgreSQL
 const pool = new Pool({
-  user: "postgres",   // <- troque pelo seu usuário do postgres
+  user: "postgres",
   host: "localhost",
   database: "clinica",
-  password: "freefire", // <- troque pela sua senha
+  password: "freefire", 
   port: 5432,
 });
 
